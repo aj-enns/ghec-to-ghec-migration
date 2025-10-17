@@ -1,0 +1,154 @@
+name: Discover Organizations and Repositories
+
+on:
+  workflow_dispatch:
+    inputs:
+      enterprise_type:
+        description: 'Which enterprise to scan'
+        required: true
+        default: 'source'
+        type: choice
+        options:
+          - 'source'
+          - 'destination'
+          - 'both'
+      include_repositories:
+        description: 'Include repository details (slower)'
+        required: false
+        default: 'true'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+jobs:
+  discover:
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup PowerShell
+      shell: pwsh
+      run: |
+        Write-Host "PowerShell version: $($PSVersionTable.PSVersion)" -ForegroundColor Green
+        Write-Host "Operating System: $($PSVersionTable.OS)" -ForegroundColor Green
+
+    - name: Validate environment variables
+      shell: pwsh
+      run: |
+        Write-Host "Validating environment variables..." -ForegroundColor Yellow
+        
+        $scanType = "${{ github.event.inputs.enterprise_type }}"
+        
+        if ($scanType -in @('source', 'both')) {
+            if (-not $env:SOURCE_PAT) {
+                Write-Error "SOURCE_PAT secret is required for source enterprise scan"
+                exit 1
+            }
+            if (-not $env:SOURCE_ENTERPRISE) {
+                Write-Error "SOURCE_ENTERPRISE secret is required for source enterprise scan"
+                exit 1
+            }
+            Write-Host "✅ Source PAT and Enterprise configured" -ForegroundColor Green
+        }
+        
+        if ($scanType -in @('destination', 'both')) {
+            if (-not $env:DESTINATION_PAT) {
+                Write-Error "DESTINATION_PAT secret is required for destination enterprise scan"
+                exit 1
+            }
+            if (-not $env:DESTINATION_ENTERPRISE) {
+                Write-Error "DESTINATION_ENTERPRISE secret is required for destination enterprise scan"
+                exit 1
+            }
+            Write-Host "✅ Destination PAT and Enterprise configured" -ForegroundColor Green
+        }
+      env:
+        SOURCE_PAT: ${{ secrets.SOURCE_PAT }}
+        DESTINATION_PAT: ${{ secrets.DESTINATION_PAT }}
+        SOURCE_ENTERPRISE: ${{ secrets.SOURCE_ENTERPRISE }}
+        DESTINATION_ENTERPRISE: ${{ secrets.DESTINATION_ENTERPRISE }}
+
+    - name: Discover Organizations and Repositories
+      shell: pwsh
+      run: |
+        Write-Host "Starting Organization Discovery..." -ForegroundColor Green
+        Write-Host "=======================================" -ForegroundColor Green
+        Write-Host ""
+        
+        $scanType = "${{ github.event.inputs.enterprise_type }}"
+        $includeRepos = "${{ github.event.inputs.include_repositories }}" -eq "true"
+        
+        # Execute discovery script
+        $params = @{
+            ScanType = $scanType
+            IncludeRepositories = $includeRepos
+            OutputFile = "discovery-report-$(Get-Date -Format 'yyyyMMdd-HHmmss').json"
+        }
+        
+        if ($scanType -in @('source', 'both')) {
+            $params.SourcePAT = $env:SOURCE_PAT
+            $params.SourceEnterprise = $env:SOURCE_ENTERPRISE
+        }
+        
+        if ($scanType -in @('destination', 'both')) {
+            $params.DestinationPAT = $env:DESTINATION_PAT
+            $params.DestinationEnterprise = $env:DESTINATION_ENTERPRISE
+        }
+        
+        try {
+            & ".\Discover-Organizations.ps1" @params
+            $exitCode = $LASTEXITCODE
+            
+            if ($exitCode -eq 0) {
+                Write-Host "✅ Discovery completed successfully!" -ForegroundColor Green
+            } else {
+                Write-Host "❌ Discovery failed with exit code: $exitCode" -ForegroundColor Red
+                exit $exitCode
+            }
+        }
+        catch {
+            Write-Host "❌ Discovery script failed: $($_.Exception.Message)" -ForegroundColor Red
+            throw
+        }
+      env:
+        SOURCE_PAT: ${{ secrets.SOURCE_PAT }}
+        DESTINATION_PAT: ${{ secrets.DESTINATION_PAT }}
+        SOURCE_ENTERPRISE: ${{ secrets.SOURCE_ENTERPRISE }}
+        DESTINATION_ENTERPRISE: ${{ secrets.DESTINATION_ENTERPRISE }}
+
+    - name: Upload discovery reports
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: discovery-report-${{ github.run_number }}
+        path: |
+          discovery-report-*.json
+          discovery-report-*.md
+          discovery-report-*.csv
+        retention-days: 90
+
+    - name: Discovery Summary
+      shell: pwsh
+      if: always()
+      run: |
+        Write-Host "Discovery Summary" -ForegroundColor Cyan
+        Write-Host "=================" -ForegroundColor Cyan
+        Write-Host "Run Number: ${{ github.run_number }}" -ForegroundColor White
+        Write-Host "Scan Type: ${{ github.event.inputs.enterprise_type }}" -ForegroundColor White
+        Write-Host "Include Repositories: ${{ github.event.inputs.include_repositories }}" -ForegroundColor White
+        Write-Host ""
+        
+        # Check if report files exist and show summary
+        $reportFiles = Get-ChildItem -Path "discovery-report-*" -ErrorAction SilentlyContinue
+        if ($reportFiles) {
+            Write-Host "Report Files Created:" -ForegroundColor Green
+            foreach ($file in $reportFiles) {
+                $size = [math]::Round($file.Length / 1KB, 2)
+                Write-Host "  - $($file.Name) ($size KB)" -ForegroundColor Gray
+            }
+            Write-Host ""
+            Write-Host "📁 Reports are available as artifacts for download" -ForegroundColor Cyan
+        }

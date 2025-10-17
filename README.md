@@ -1,8 +1,107 @@
 # GitHub Repository Migration Action
 
-This repository contains a GitHub Action that automates the migration of repositories from one GitHub Enterprise Cloud (GHEC) server to another using PowerShell.
+Automate the migration of repositories between GitHub Enterprise Cloud (GHEC) instances using GitHub Actions and PowerShell.
 
-## 🚀 Quick Start
+## 📖 What This Does
+
+This workflow automates the complete migration of Git repositories from one GitHub Enterprise Cloud (GHEC) instance to another. It:
+
+- **Clones repositories** from source organizations using `git clone --mirror`
+- **Creates destination repositories** in target organizations with matching settings
+- **Pushes complete history** to destination using `git push --mirror`
+- **Preserves everything**:
+  - ✅ All commits with original authors and dates
+  - ✅ All branches and tags
+  - ✅ Complete commit history and metadata
+  - ✅ Repository settings (description, visibility, features)
+
+**What it does NOT migrate:**
+- ❌ Issues, Pull Requests, or Discussions
+- ❌ GitHub Actions secrets or variables
+- ❌ Branch protection rules or repository settings
+- ❌ Webhooks or GitHub Apps integrations
+
+For those items, use [GitHub's official migration tools](https://docs.github.com/en/migrations) (GEI/Importer).
+
+## 🎯 Why Use This Workflow?
+
+### Perfect For:
+
+✅ **Enterprise Managed Users (EMU) Migrations**
+- Migrating from standard GHEC to EMU instances
+- Moving repositories between different EMU enterprises
+- Consolidating organizations within the same enterprise
+
+✅ **Bulk Repository Migrations**
+- Migrate multiple organizations at once
+- Automated, repeatable process
+- Can be scheduled or triggered on-demand
+
+✅ **Code-Only Migrations**
+- When you only need the Git history (code, commits, branches, tags)
+- When issues/PRs will be handled separately
+- When starting fresh with new workflow configurations
+
+✅ **Testing & Validation**
+- Dry-run mode lets you test without making changes
+- Comprehensive logging for auditing
+- Validates access and permissions before migrating
+
+### Key Benefits:
+
+🚀 **Automated** - No manual git commands, runs entirely in GitHub Actions
+🔒 **Secure** - Uses GitHub Secrets for PATs, no credentials in code
+📊 **Transparent** - Real-time logs and detailed migration artifacts
+🔄 **Repeatable** - Consistent process across multiple organizations
+✅ **Safe** - Dry-run mode and validation before actual migration
+🎯 **Flexible** - Custom organization mappings and selective migrations
+
+### When NOT to Use This:
+
+❌ **Need full migration** (issues, PRs, etc.) - Use [GitHub Enterprise Importer (GEI)](https://docs.github.com/en/migrations/using-github-enterprise-importer)
+❌ **Migrating from other platforms** (GitLab, Bitbucket) - Use platform-specific importers
+❌ **Small one-off migrations** - Manual git commands might be faster
+❌ **Need to preserve GitHub-specific metadata** - Use GEI or official migration API
+
+## � Common Use Cases
+
+### Scenario 1: EMU Migration
+**Situation**: Your organization is moving from standard GHEC to Enterprise Managed Users (EMU)
+
+**Why this workflow**: 
+- Handles the complexity of EMU authentication and SSO
+- Validates EMU-specific permissions before migrating
+- Can migrate multiple organizations simultaneously
+- Preserves complete Git history with original authors
+
+### Scenario 2: Enterprise Consolidation
+**Situation**: Merging multiple GitHub enterprises into one EMU instance
+
+**Why this workflow**:
+- Automates repetitive migration tasks
+- Consistent naming conventions (org-name → org-name-emu)
+- Dry-run mode for testing organization mappings
+- Detailed logs for compliance and audit requirements
+
+### Scenario 3: Repository Reorganization
+**Situation**: Moving repositories between organizations within same enterprise
+
+**Why this workflow**:
+- Flexible organization mapping
+- Can migrate specific repositories or entire organizations
+- Safe testing with dry-run mode
+- No manual git command errors
+
+### Scenario 4: Disaster Recovery / Backup
+**Situation**: Creating mirrors of critical repositories in a separate enterprise
+
+**Why this workflow**:
+- Scheduled automation via GitHub Actions
+- Complete repository replication including all branches
+- Can be run periodically to keep mirrors updated
+- Verification and logging for audit trails
+
+## �🚀 Quick Start
 
 ### 1. Create Personal Access Tokens (PATs)
 
@@ -39,6 +138,7 @@ In your GitHub repository, go to **Settings > Secrets and variables > Actions** 
 
 - ✅ **Secure PAT Handling**: Uses GitHub secrets for Personal Access Tokens
 - ✅ **Dry Run Mode**: Test migrations safely without making changes
+- ✅ **Organization Discovery**: Automatically discover all organizations and repositories in an enterprise
 - ✅ **Custom Organizations**: Override default organization mappings
 - ✅ **Comprehensive Logging**: Detailed logs uploaded as artifacts
 - ✅ **Error Handling**: Proper error reporting and exit codes
@@ -125,7 +225,25 @@ After each run, the action provides:
 
 ## 🔄 Typical Workflow
 
-### First Run (Dry Run)
+### Step 1: Discover Organizations (Recommended First Step)
+
+Before migrating, discover what organizations and repositories exist:
+
+1. Go to **Actions** tab → **Discover Organizations and Repositories**
+2. Click **Run workflow**
+3. Configure:
+   - **enterprise_type**: `source`, `destination`, or `both`
+   - **include_repositories**: `true` (for detailed inventory)
+4. Download the generated reports (JSON, Markdown, CSV)
+5. Review the reports to plan your migration
+
+**Why do this first?**
+- See exactly what will be migrated
+- Identify any issues or missing organizations
+- Plan your organization mappings
+- Verify PAT access to all organizations
+
+### Step 2: Test Migration (Dry Run)
 ```yaml
 Dry Run: true
 Source Organizations: (leave empty for defaults)
@@ -190,6 +308,9 @@ Destination Organizations: org1-rpa-emu,org1-ds-emu
 
 ## 📖 Related Documentation
 
+- [DISCOVERY-GUIDE.md](DISCOVERY-GUIDE.md) - **Complete guide for organization discovery workflow**
+- [SECRETS-SETUP.md](SECRETS-SETUP.md) - Detailed instructions for configuring repository secrets  
+- [GitHub-Action-Setup.md](GitHub-Action-Setup.md) - Quick start guide for running workflows
 - [Migration-Documentation.md](Migration-Documentation.md) - Detailed script documentation
 - [Manual-Environment-Setup.md](Manual-Environment-Setup.md) - Local setup guide
 - [GitHub PAT Documentation](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token)
