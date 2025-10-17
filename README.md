@@ -49,19 +49,19 @@ For those items, use [GitHub's official migration tools](https://docs.github.com
 
 ### Key Benefits:
 
-🚀 **Automated** - No manual git commands, runs entirely in GitHub Actions
-🔒 **Secure** - Uses GitHub Secrets for PATs, no credentials in code
-📊 **Transparent** - Real-time logs and detailed migration artifacts
-🔄 **Repeatable** - Consistent process across multiple organizations
-✅ **Safe** - Dry-run mode and validation before actual migration
-🎯 **Flexible** - Custom organization mappings and selective migrations
+- 🚀 **Automated** - No manual git commands, runs entirely in GitHub Actions
+- 🔒 **Secure** - Uses GitHub Secrets for PATs, no credentials in code
+- 📊 **Transparent** - Real-time logs and detailed migration artifacts
+- 🔄 **Repeatable** - Consistent process across multiple organizations
+- ✅ **Safe** - Dry-run mode and validation before actual migration
+- 🎯 **Flexible** - Custom organization mappings and selective migrations
 
 ### When NOT to Use This:
 
-❌ **Need full migration** (issues, PRs, etc.) - Use [GitHub Enterprise Importer (GEI)](https://docs.github.com/en/migrations/using-github-enterprise-importer)
-❌ **Migrating from other platforms** (GitLab, Bitbucket) - Use platform-specific importers
-❌ **Small one-off migrations** - Manual git commands might be faster
-❌ **Need to preserve GitHub-specific metadata** - Use GEI or official migration API
+- ❌ **Need full migration** (issues, PRs, etc.) - Use [GitHub Enterprise Importer (GEI)](https://docs.github.com/en/migrations/using-github-enterprise-importer)
+- ❌ **Migrating from other platforms** (GitLab, Bitbucket) - Use platform-specific importers
+- ❌ **Small one-off migrations** - Manual git commands might be faster
+- ❌ **Need to preserve GitHub-specific metadata** - Use GEI or official migration API
 
 ## � Common Use Cases
 
