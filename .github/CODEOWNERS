@@ -1,0 +1,29 @@
+# CODEOWNERS file for ghec-to-ghec-migration
+# 
+# This file defines who will be automatically requested for review when
+# pull requests modify specific files or directories.
+#
+# Format: path/to/file @github-username @github-org/team-name
+#
+# More info: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default owner for everything in the repo
+# This will be requested for review on all PRs unless overridden below
+* @aj-enns
+
+# GitHub Actions workflows
+/.github/workflows/ @aj-enns
+
+# PowerShell migration scripts
+*.ps1 @aj-enns
+
+# Documentation files
+*.md @aj-enns
+
+# Configuration files
+*.yml @aj-enns
+*.yaml @aj-enns
+
+# Example: If you have a team, you can add them
+# /.github/workflows/ @your-org/devops-team
+# *.ps1 @your-org/migration-team
