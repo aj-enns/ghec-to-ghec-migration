@@ -10,16 +10,16 @@ This workflow automates the complete migration of Git repositories from one GitH
 - **Creates destination repositories** in target organizations with matching settings
 - **Pushes complete history** to destination using `git push --mirror`
 - **Preserves everything**:
-  - ✅ All commits with original authors and dates
-  - ✅ All branches and tags
-  - ✅ Complete commit history and metadata
-  - ✅ Repository settings (description, visibility, features)
+   - ✅ All commits with original authors and dates
+   - ✅ All branches and tags
+   - ✅ Complete commit history and metadata
+   - ✅ Repository settings (description, visibility, features)
 
 **What it does NOT migrate:**
-- ❌ Issues, Pull Requests, or Discussions
-- ❌ GitHub Actions secrets or variables
-- ❌ Branch protection rules or repository settings
-- ❌ Webhooks or GitHub Apps integrations
+   - ❌ Issues, Pull Requests, or Discussions
+   - ❌ GitHub Actions secrets or variables
+   - ❌ Branch protection rules or repository settings
+   - ❌ Webhooks or GitHub Apps integrations
 
 For those items, use [GitHub's official migration tools](https://docs.github.com/en/migrations) (GEI/Importer).
 
