@@ -217,15 +217,42 @@ The discovery workflow uses the same secrets as the migration workflow:
 - Verify the enterprise name is correct
 - Confirm user is enterprise member
 
-### Empty Organization List
+### Empty Organization List (0 Organizations Found)
 
-**Cause**: PAT lacks access to organizations
+**Cause**: PAT cannot see any organizations
 
-**Solution**:
-- Verify PAT has `read:org` scope
-- Check user is member of organizations
-- For EMU: Verify SSO is authorized
-- Confirm enterprise name is correct
+**This is the most common issue!** If you see `Total organizations found: 0`, use the diagnostic script:
+
+```powershell
+# Run the diagnostic test
+.\Test-Discovery-API.ps1 -Token "your_pat_token" -Enterprise "your-enterprise-name"
+```
+
+**Common Solutions**:
+
+1. **Missing `read:org` scope**
+   - Go to: https://github.com/settings/tokens
+   - Edit your PAT
+   - Check the `read:org` checkbox
+   - Regenerate the token
+   - Update the secret in your repository
+
+2. **SSO Not Authorized (EMU)**
+   - Go to: https://github.com/settings/tokens
+   - Find your PAT
+   - Click **Configure SSO**
+   - Click **Authorize** next to each organization
+   - Run discovery again
+
+3. **Not a member of any organizations**
+   - Verify you're logged into the correct account
+   - Check https://github.com/YOUR_USERNAME to see organizations
+   - For EMU: Ensure you're using the EMU account (username ends with `_enterprise`)
+
+4. **Wrong enterprise name**
+   - Verify `SOURCE_ENTERPRISE` or `DESTINATION_ENTERPRISE` secret is correct
+   - Enterprise names are case-sensitive
+   - Try the diagnostic script to test
 
 ### 403 Forbidden Errors
 
