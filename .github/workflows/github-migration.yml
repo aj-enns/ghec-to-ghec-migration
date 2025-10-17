@@ -29,8 +29,8 @@ on:
 
 env:
   # Default organization mappings
-  DEFAULT_SOURCE_ORGS: "govmb-ds,govmb-la,govmb-rpa,govmb-ams"
-  DEFAULT_DESTINATION_ORGS: "govmb-ds-emu,govmb-la-emu,govmb-rpa-emu,govmb-ams-emu"
+  DEFAULT_SOURCE_ORGS: "org1-ds,org1-la,org1-rpa,org1-ams"
+  DEFAULT_DESTINATION_ORGS: "org1-ds-emu,org1-la-emu,org1-rpa-emu,org1-ams-emu"
 
 jobs:
   migrate-repositories:
