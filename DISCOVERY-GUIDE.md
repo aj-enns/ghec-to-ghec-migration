@@ -14,11 +14,11 @@ The **Discover Organizations and Repositories** workflow scans your GitHub Enter
 
 ## When to Use
 
-✅ **Before starting a migration** - See what you're migrating
-✅ **Planning organization mappings** - Understand source/destination structure
-✅ **Auditing repository inventory** - Create compliance reports
-✅ **Validating PAT permissions** - Ensure access before migration
-✅ **Periodic inventory** - Track repository growth over time
+- ✅ **Before starting a migration** - See what you're migrating
+- ✅ **Planning organization mappings** - Understand source/destination structure
+- ✅ **Auditing repository inventory** - Create compliance reports
+- ✅ **Validating PAT permissions** - Ensure access before migration
+- ✅ **Periodic inventory** - Track repository growth over time
 
 ## How to Run
 
