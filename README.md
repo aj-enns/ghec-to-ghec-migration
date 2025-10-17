@@ -1,4 +1,4 @@
-# GitHub Repository Migration Action
+# GHEC to GHEC Code Migration Tool
 
 Automate the migration of repositories between GitHub Enterprise Cloud (GHEC) instances using GitHub Actions and PowerShell.
 
