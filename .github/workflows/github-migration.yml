@@ -1,0 +1,213 @@
+name: GitHub Repository Migration
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Run in dry-run mode (recommended for testing)'
+        required: false
+        default: 'true'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+      source_organizations:
+        description: 'Source organizations (comma-separated, leave empty for default)'
+        required: false
+        default: ''
+        type: string
+      destination_organizations:
+        description: 'Destination organizations (comma-separated, leave empty for default)'
+        required: false
+        default: ''
+        type: string
+      working_directory:
+        description: 'Working directory for temporary files'
+        required: false
+        default: './temp-migration'
+        type: string
+
+env:
+  # Default organization mappings
+  DEFAULT_SOURCE_ORGS: "govmb-ds,govmb-la,govmb-rpa,govmb-ams"
+  DEFAULT_DESTINATION_ORGS: "govmb-ds-emu,govmb-la-emu,govmb-rpa-emu,govmb-ams-emu"
+
+jobs:
+  migrate-repositories:
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup PowerShell
+      shell: pwsh
+      run: |
+        Write-Host "PowerShell version: $($PSVersionTable.PSVersion)" -ForegroundColor Green
+        Write-Host "Operating System: $($PSVersionTable.OS)" -ForegroundColor Green
+
+    - name: Validate environment variables
+      shell: pwsh
+      run: |
+        Write-Host "Validating environment variables..." -ForegroundColor Yellow
+        
+        if (-not $env:SOURCE_PAT) {
+            Write-Error "SOURCE_PAT environment variable is not set"
+            exit 1
+        }
+        
+        if (-not $env:DESTINATION_PAT) {
+            Write-Error "DESTINATION_PAT environment variable is not set"
+            exit 1
+        }
+        
+        if (-not $env:SOURCE_ENTERPRISE) {
+            Write-Error "SOURCE_ENTERPRISE secret is not set"
+            exit 1
+        }
+        
+        if (-not $env:DESTINATION_ENTERPRISE) {
+            Write-Error "DESTINATION_ENTERPRISE secret is not set"
+            exit 1
+        }
+        
+        Write-Host "✅ Source PAT found (length: $($env:SOURCE_PAT.Length))" -ForegroundColor Green
+        Write-Host "✅ Destination PAT found (length: $($env:DESTINATION_PAT.Length))" -ForegroundColor Green
+        Write-Host "✅ Source Enterprise: $env:SOURCE_ENTERPRISE" -ForegroundColor Green
+        Write-Host "✅ Destination Enterprise: $env:DESTINATION_ENTERPRISE" -ForegroundColor Green
+      env:
+        SOURCE_PAT: ${{ secrets.SOURCE_PAT }}
+        DESTINATION_PAT: ${{ secrets.DESTINATION_PAT }}
+        SOURCE_ENTERPRISE: ${{ secrets.SOURCE_ENTERPRISE }}
+        DESTINATION_ENTERPRISE: ${{ secrets.DESTINATION_ENTERPRISE }}
+
+    - name: Setup Git
+      shell: pwsh
+      run: |
+        Write-Host "Configuring Git..." -ForegroundColor Yellow
+        git config --global user.name "GitHub Action"
+        git config --global user.email "action@github.com"
+        git config --global core.autocrlf false
+        
+        $gitVersion = git --version
+        Write-Host "✅ Git configured: $gitVersion" -ForegroundColor Green
+
+    - name: Prepare migration parameters
+      shell: pwsh
+      run: |
+        Write-Host "Preparing migration parameters..." -ForegroundColor Yellow
+        
+        # Set organizations
+        if ("${{ github.event.inputs.source_organizations }}" -ne "") {
+            $sourceOrgs = "${{ github.event.inputs.source_organizations }}".Split(',').Trim()
+            Write-Host "Using custom source organizations: $($sourceOrgs -join ', ')" -ForegroundColor Cyan
+        } else {
+            $sourceOrgs = $env:DEFAULT_SOURCE_ORGS.Split(',').Trim()
+            Write-Host "Using default source organizations: $($sourceOrgs -join ', ')" -ForegroundColor Cyan
+        }
+        
+        if ("${{ github.event.inputs.destination_organizations }}" -ne "") {
+            $destOrgs = "${{ github.event.inputs.destination_organizations }}".Split(',').Trim()
+            Write-Host "Using custom destination organizations: $($destOrgs -join ', ')" -ForegroundColor Cyan
+        } else {
+            $destOrgs = $env:DEFAULT_DESTINATION_ORGS.Split(',').Trim()
+            Write-Host "Using default destination organizations: $($destOrgs -join ', ')" -ForegroundColor Cyan
+        }
+        
+        # Set other parameters
+        $dryRun = "${{ github.event.inputs.dry_run }}" -eq "true"
+        $workingDir = "${{ github.event.inputs.working_directory }}"
+        
+        Write-Host "Dry Run: $dryRun" -ForegroundColor $(if($dryRun) { "Yellow" } else { "Red" })
+        Write-Host "Working Directory: $workingDir" -ForegroundColor Cyan
+        
+        # Export for next step
+        "SOURCE_ORGS=$($sourceOrgs -join ',')" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+        "DEST_ORGS=$($destOrgs -join ',')" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+        "DRY_RUN=$dryRun" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+        "WORKING_DIR=$workingDir" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+    - name: Run GitHub Repository Migration
+      shell: pwsh
+      run: |
+        Write-Host "Starting GitHub Repository Migration..." -ForegroundColor Green
+        Write-Host "=======================================" -ForegroundColor Green
+        
+        # Parse organizations
+        $sourceOrgs = $env:SOURCE_ORGS.Split(',').Trim()
+        $destOrgs = $env:DEST_ORGS.Split(',').Trim()
+        $isDryRun = [System.Convert]::ToBoolean($env:DRY_RUN)
+        
+        # Build command parameters
+        $params = @{
+            SourcePAT = $env:SOURCE_PAT
+            DestinationPAT = $env:DESTINATION_PAT
+            SourceEnterprise = $env:SOURCE_ENTERPRISE
+            DestinationEnterprise = $env:DESTINATION_ENTERPRISE
+            SourceOrganizations = $sourceOrgs
+            DestinationOrganizations = $destOrgs
+            WorkingDirectory = $env:WORKING_DIR
+            LogFile = "migration-log-$(Get-Date -Format 'yyyyMMdd-HHmmss').txt"
+        }
+        
+        if ($isDryRun) {
+            $params.DryRun = $true
+            Write-Host "🔍 Running in DRY RUN mode - no actual changes will be made" -ForegroundColor Yellow
+        } else {
+            Write-Host "🚀 Running in LIVE mode - repositories will be migrated" -ForegroundColor Red
+        }
+        
+        # Execute migration script
+        try {
+            & ".\Migrate-GitHubRepos.ps1" @params
+            $exitCode = $LASTEXITCODE
+            
+            if ($exitCode -eq 0) {
+                Write-Host "✅ Migration completed successfully!" -ForegroundColor Green
+            } else {
+                Write-Host "❌ Migration failed with exit code: $exitCode" -ForegroundColor Red
+                exit $exitCode
+            }
+        }
+        catch {
+            Write-Host "❌ Migration script failed: $($_.Exception.Message)" -ForegroundColor Red
+            throw
+        }
+      env:
+        SOURCE_PAT: ${{ secrets.SOURCE_PAT }}
+        DESTINATION_PAT: ${{ secrets.DESTINATION_PAT }}
+        SOURCE_ENTERPRISE: ${{ secrets.SOURCE_ENTERPRISE }}
+        DESTINATION_ENTERPRISE: ${{ secrets.DESTINATION_ENTERPRISE }}
+
+    - name: Upload migration logs
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: migration-logs-${{ github.run_number }}
+        path: |
+          migration-log-*.txt
+          migration-log-*.log
+        retention-days: 30
+
+    - name: Migration Summary
+      shell: pwsh
+      if: always()
+      run: |
+        Write-Host "Migration Summary" -ForegroundColor Cyan
+        Write-Host "=================" -ForegroundColor Cyan
+        Write-Host "Run Number: ${{ github.run_number }}" -ForegroundColor White
+        Write-Host "Dry Run: $env:DRY_RUN" -ForegroundColor White
+        Write-Host "Source Organizations: $env:SOURCE_ORGS" -ForegroundColor White
+        Write-Host "Destination Organizations: $env:DEST_ORGS" -ForegroundColor White
+        Write-Host "Working Directory: $env:WORKING_DIR" -ForegroundColor White
+        
+        # Check if log files exist and show summary
+        $logFiles = Get-ChildItem -Path "migration-log-*.txt" -ErrorAction SilentlyContinue
+        if ($logFiles) {
+            Write-Host "Log Files Created:" -ForegroundColor Green
+            foreach ($file in $logFiles) {
+                Write-Host "  - $($file.Name)" -ForegroundColor Gray
+            }
+        }
+        
+        Write-Host "📁 Logs are available as artifacts for download" -ForegroundColor Cyan

@@ -1,0 +1,22 @@
+# Ignore sensitive configuration files
+config.ps1
+
+# Ignore log files
+migration-log-*.txt
+migration-log-*.log
+*.log
+
+# Ignore temporary migration directory
+temp-migration/
+temp-*/
+
+# Ignore any PAT or credential files
+
+*credential*
+*secret*
+
+# Ignore PowerShell execution policy files
+ExecutionPolicy
+
+# Ignore VS Code settings if not needed
+.vscode/
